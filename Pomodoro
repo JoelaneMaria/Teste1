@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cronômetro Pomodoro</title>
+    <style>
+        :root {
+            --bg-color: #121214;
+            --card-bg: #1e1e24;
+            --text-primary: #e1e1e6;
+            --text-secondary: #a8a8b3;
+            --primary: #e5484d;
+            --primary-hover: #f97316;
+            --short-break: #00c7be;
+            --long-break: #3e63dd;
+            --border-color: #2e2e38;
+            --font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            font-family: var(--font-family);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            transition: background-color 0.3s ease;
+        }
+        .container {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 40px;
+            width: 100%;
+            max-width: 450px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+            text-align: center;
+        }
+        h1 {
+            font-size: 1.8rem;
+            margin-bottom: 25px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+  
+        .modes {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 30px;
+            background-color: rgba(0, 0, 0, 0.2);
+            padding: 6px;
+            border-radius: 12px;
+        }
+        .mode-btn {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            padding: 10px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            flex: 1;
+        }
+        .mode-btn.active {
+            color: #fff;
+            background-color: var(--primary);
+            font-weight: 600;
+        }
+        .timer-display {
+            font-size: 5rem;
+            font-weight: 700;
+            letter-spacing: -2px;
+            margin: 20px 0;
+            font-variant-numeric: tabular-nums;
+            color: var(--text-primary);
+        }
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        .btn {
+            border: none;
+            padding: 14px 28px;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .btn-primary {
+            background-color: var(--primary);
+            color: #fff;
+            min-width: 130px;
+        }
+
+         .btn-primary:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+        }
+        .btn-secondary {
+            background-color: #2d2d38;
+            color: var(--text-secondary);
+        }
+        .btn-secondary:hover {
+            background-color: #3a3a49;
+            color: var(--text-primary);
+        }
+        .stats {
+            border-top: 1px solid var(--border-color);
+            padding-top: 20px;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            display: flex;
+            justify-content: space-around;
+        }
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+         .stat-value {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Pomodoro</h1>
+        <div class="modes">
+            <button class="mode-btn active" data-mode="pomodoro" data-time="25">Foco</button>
+            <button class="mode-btn" data-mode="shortBreak" data-time="5">Pausa Curta</button>
+            <button class="mode-btn" data-mode="longBreak" data-time="15">Pausa Longa</button>
+        </div>
+        <div class="timer-display" id="timer">25:00</div>
+        <div class="controls">
+            <button class="btn btn-primary" id="start-btn">Iniciar</button>
+            <button class="btn btn-secondary" id="reset-btn">Reiniciar</button>
+        </div>
+        <div class="stats">
+            <div class="stat-item">
+                <span>Sessões Concluídas</span>
+                <span class="stat-value" id="completed-sessions">0</span>
+            </div>
+        </div>
+    </div>
+    <script>
+        const modeBtns = document.querySelectorAll('.mode-btn');
+        const timerDisplay = document.getElementById('timer');
+        const startBtn = document.getElementById('start-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const completedSessionsDisplay = document.getElementById('completed-sessions');
+        const modeColors = {
+            pomodoro: '#e5484d',
+            shortBreak: '#00c7be',
+            longBreak: '#3e63dd'
+        };
+
+ let currentMode = 'pomodoro';
+        let currentTimeMinutes = 25;
+        let totalSeconds = currentTimeMinutes * 60;
+        let timerInterval = null;
+        let isRunning = false;
+        let completedSessions = 0;
+        function updateDisplay() {
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = totalSeconds % 60;
+            const formattedTime = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            
+            timerDisplay.textContent = formattedTime;
+            document.title = `${formattedTime} - ${currentMode === 'pomodoro' ? 'Foco' : 'Pausa'}`;
+        }
+        function setMode(mode, minutes) {
+            currentMode = mode;
+            currentTimeMinutes = minutes;
+            totalSeconds = minutes * 60;
+            document.documentElement.style.setProperty('--primary', modeColors[mode]);
+            modeBtns.forEach(btn => {
+                if (btn.dataset.mode === mode) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+
+
+             pauseTimer();
+            updateDisplay();
+        }
+        function startTimer() {
+            if (isRunning) return;
+            
+            isRunning = true;
+            startBtn.textContent = 'Pausar';
+            timerInterval = setInterval(() => {
+                if (totalSeconds > 0) {
+                    totalSeconds--;
+                    updateDisplay();
+                } else {
+                    clearInterval(timerInterval);
+                    isRunning = false;
+                    startBtn.textContent = 'Iniciar';
+                    
+                    if (currentMode === 'pomodoro') {
+                        completedSessions++;
+                        completedSessionsDisplay.textContent = completedSessions;
+                        alert('Tempo de foco encerrado! Hora de uma pausa.');
+                    } else {
+                        alert('Pausa encerrada! Hora de voltar ao foco.');
+                    }
+                }
+            }, 1000);
+        }
+        function pauseTimer() {
+            isRunning = false;
+            clearInterval(timerInterval);
+            startBtn.textContent = 'Iniciar';
+        }
+        function toggleTimer() {
+            if (isRunning) {
+                pauseTimer();
+            } else {
+                startTimer();
+            }
+        }
+
+
+        function resetTimer() {
+            pauseTimer();
+            totalSeconds = currentTimeMinutes * 60;
+            updateDisplay();
+        }
+        modeBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const mode = btn.dataset.mode;
+                const time = parseInt(btn.dataset.time, 10);
+                setMode(mode, time);
+            });
+        });
+        startBtn.addEventListener('click', toggleTimer);
+        resetBtn.addEventListener('click', resetTimer);
+        updateDisplay();
+    </script>
+</body>
+</html>
