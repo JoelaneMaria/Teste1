@@ -1,0 +1,1113 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Discrete Signal Convolution Visualizer & Calculator</title>
+    <style>
+        :root {
+            --bg-body: #0f172a;
+            --bg-card: #1e293b;
+            --bg-input: #334155;
+            --bg-hover: #475569;
+            --border: #334155;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            
+            --color-x: #38bdf8;
+            --color-h: #fbbf24;
+            --color-prod: #f43f5e;
+            --color-y: #34d399;
+            
+            --radius-lg: 12px;
+            --radius-md: 8px;
+            --radius-sm: 4px;
+            --shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+            --transition: all 0.2s ease-in-out;
+        }
+
+        [data-theme="light"] {
+            --bg-body: #f8fafc;
+            --bg-card: #ffffff;
+            --bg-input: #f1f5f9;
+            --bg-hover: #e2e8f0;
+            --border: #cbd5e1;
+            --text-primary: #0f172a;
+            --text-secondary: #64748b;
+            --shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-body);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 12px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            transition: var(--transition);
+        }
+
+        .app-container {
+            max-width: 1600px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        /* Header Compacto */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--bg-card);
+            padding: 10px 16px;
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+        }
+
+        .header-title h1 {
+            font-size: 1.15rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .header-title p {
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+        }
+
+        .theme-toggle-btn {
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            padding: 6px 12px;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.75rem;
+            transition: var(--transition);
+        }
+
+        /* Layout em Dashboard / Grid Principal */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            gap: 12px;
+            align-items: start;
+        }
+
+        @media (max-width: 1024px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Coluna Lateral */
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .card {
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
+            padding: 14px;
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+        }
+
+        .card-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .inputs-flex {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .input-box {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            background: var(--bg-input);
+            padding: 10px;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border);
+        }
+
+        .input-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .input-header label {
+            font-weight: 600;
+            font-size: 0.8rem;
+        }
+
+        .badge {
+            font-size: 0.65rem;
+            padding: 2px 6px;
+            border-radius: var(--radius-sm);
+            font-weight: 700;
+        }
+
+        .badge-x { background: rgba(56, 189, 248, 0.2); color: var(--color-x); }
+        .badge-h { background: rgba(251, 191, 36, 0.2); color: var(--color-h); }
+
+        .form-control {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            padding: 6px 10px;
+            border-radius: var(--radius-sm);
+            font-size: 0.85rem;
+            width: 100%;
+            outline: none;
+        }
+
+        .origin-control {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .origin-control input[type="number"] {
+            width: 60px;
+        }
+
+        .preset-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            margin-top: 8px;
+        }
+
+        .preset-btn {
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            padding: 4px 8px;
+            border-radius: var(--radius-sm);
+            font-size: 0.7rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .preset-btn:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+
+        .calc-btn {
+            background: linear-gradient(135deg, var(--color-x), #2563eb);
+            color: #ffffff;
+            border: none;
+            padding: 10px;
+            border-radius: var(--radius-md);
+            font-size: 0.85rem;
+            font-weight: 700;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .formula-card {
+            background: var(--bg-input);
+            border-left: 3px solid var(--color-y);
+            padding: 10px;
+            border-radius: var(--radius-md);
+            font-family: ui-monospace, SFMono-Regular, monospace;
+            font-size: 0.8rem;
+            line-height: 1.4;
+            max-height: 160px;
+            overflow-y: auto;
+        }
+
+        /* Controle Fixo do Passo (Sticky Step Controls) */
+        .step-controls-sticky {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            padding: 10px 14px;
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow);
+            margin-bottom: 12px;
+        }
+
+        .step-slider-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .step-slider-group input[type="range"] {
+            flex: 1;
+            accent-color: var(--color-x);
+            cursor: pointer;
+        }
+
+        .step-val-badge {
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            padding: 4px 10px;
+            border-radius: var(--radius-sm);
+            font-weight: 700;
+            font-family: monospace;
+            font-size: 0.85rem;
+            color: var(--color-x);
+        }
+
+        .playback-buttons {
+            display: flex;
+            gap: 6px;
+        }
+
+        .btn-icon {
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            padding: 6px 10px;
+            border-radius: var(--radius-sm);
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        /* Layout Triplo para Gráficos Lado a Lado */
+        .plots-horizontal-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        @media (max-width: 900px) {
+            .plots-horizontal-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .plot-container {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 10px;
+        }
+
+        .plot-header {
+            margin-bottom: 6px;
+        }
+
+        .plot-title {
+            font-size: 0.75rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .dot-legend {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            flex-shrink: 0;
+        }
+
+        canvas {
+            width: 100%;
+            height: 220px;
+            display: block;
+        }
+
+        /* Tabela */
+        .table-wrapper {
+            overflow-x: auto;
+            max-height: 400px;
+            overflow-y: auto;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.8rem;
+        }
+
+        th, td {
+            padding: 8px 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        th {
+            background: var(--bg-input);
+            color: var(--text-secondary);
+            font-weight: 600;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            position: sticky;
+            top: 0;
+        }
+
+        tr.active-step-row {
+            background: rgba(56, 189, 248, 0.15);
+        }
+
+        .math-code {
+            font-family: ui-monospace, SFMono-Regular, monospace;
+        }
+
+        .sum-highlight {
+            color: var(--color-y);
+            font-weight: 700;
+        }
+
+        .error-banner {
+            background: rgba(244, 63, 94, 0.15);
+            border: 1px solid #f43f5e;
+            color: #f43f5e;
+            padding: 6px 10px;
+            border-radius: var(--radius-sm);
+            font-size: 0.75rem;
+            display: none;
+            margin-top: 8px;
+        }
+
+        .nav-tabs {
+            display: flex;
+            gap: 6px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 8px;
+            margin-bottom: 12px;
+        }
+
+        .tab-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            padding: 6px 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: var(--radius-sm);
+        }
+
+        .tab-btn.active {
+            background: var(--bg-input);
+            color: var(--text-primary);
+        }
+
+        .tab-panel { display: none; }
+        .tab-panel.active { display: block; }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <!-- Header -->
+        <header>
+            <div class="header-title">
+                <h1>📊 Discrete Signal Convolution Visualizer</h1>
+                <p>DSP Tool for Discrete-Time LTI System Analysis</p>
+            </div>
+            <button class="theme-toggle-btn" id="themeBtn" onclick="toggleTheme()">
+                🌙 Dark Mode
+            </button>
+        </header>
+
+        <!-- Dashboard Grid Layout -->
+        <div class="dashboard-grid">
+            
+            <!-- Coluna Lateral de Configurações -->
+            <div class="sidebar">
+                <section class="card">
+                    <div class="card-title">
+                        <span>Signal Configuration</span>
+                    </div>
+
+                    <div class="inputs-flex">
+                        <div class="input-box">
+                            <div class="input-header">
+                                <label for="inputX">Input x[n]</label>
+                                <span class="badge badge-x">x[n]</span>
+                            </div>
+                            <input type="text" id="inputX" class="form-control" value="1, 2, 3, 1">
+                            <div class="origin-control">
+                                <label for="originX">Start (n=0):</label>
+                                <input type="number" id="originX" class="form-control" value="0">
+                            </div>
+                        </div>
+
+                        <div class="input-box">
+                            <div class="input-header">
+                                <label for="inputH">Impulse h[n]</label>
+                                <span class="badge badge-h">h[n]</span>
+                            </div>
+                            <input type="text" id="inputH" class="form-control" value="1, -1, 2">
+                            <div class="origin-control">
+                                <label for="originH">Start (n=0):</label>
+                                <input type="number" id="originH" class="form-control" value="0">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="errorBanner" class="error-banner">
+                        Invalid input! Enter comma-separated numbers.
+                    </div>
+
+                    <div class="preset-row">
+                        <button class="preset-btn" onclick="loadPreset('rect')">Rect</button>
+                        <button class="preset-btn" onclick="loadPreset('impulse')">Delta</button>
+                        <button class="preset-btn" onclick="loadPreset('decay')">Decay</button>
+                        <button class="preset-btn" onclick="loadPreset('moving_avg')">MA Avg</button>
+                        <button class="preset-btn" onclick="loadPreset('diff')">Diff</button>
+                    </div>
+
+                    <button class="calc-btn" onclick="computeConvolution()">Compute y[n]</button>
+                </section>
+
+                <section class="card">
+                    <div class="card-title">
+                        <span>Convolution Result</span>
+                    </div>
+                    <div class="formula-card" id="resultFormula">
+                        y[n] = { ... }
+                    </div>
+                </section>
+            </div>
+
+            <!-- Coluna Principal (Visualização e Gráficos) -->
+            <main class="card">
+                <!-- Controle de Passo FIXO (Sticky) -->
+                <div class="step-controls-sticky">
+                    <div class="step-slider-group">
+                        <label style="font-weight:600; font-size:0.8rem;">Shift Step (n):</label>
+                        <input type="range" id="stepSlider" min="0" max="10" value="0" oninput="onSliderChange(this.value)">
+                        <span class="step-val-badge" id="stepValLabel">n = 0</span>
+                    </div>
+
+                    <div class="playback-buttons">
+                        <button class="btn-icon" onclick="stepPrevious()">◀ Prev</button>
+                        <button class="btn-icon" id="playBtn" onclick="togglePlay()">▶ Play</button>
+                        <button class="btn-icon" onclick="stepNext()">Next ▶</button>
+                    </div>
+                </div>
+
+                <div class="nav-tabs">
+                    <button class="tab-btn active" onclick="switchTab('interactive')">🎬 Horizontal Plots</button>
+                    <button class="tab-btn" onclick="switchTab('table')">📋 Calculation Table</button>
+                </div>
+
+                <!-- Tab 1: Gráficos Lado a Lado -->
+                <div id="tab-interactive" class="tab-panel active">
+                    <div class="plots-horizontal-grid">
+                        <div class="plot-container">
+                            <div class="plot-header">
+                                <span class="plot-title">
+                                    <span class="dot-legend" style="background: var(--color-x);"></span> x[k] &
+                                    <span class="dot-legend" style="background: var(--color-h);"></span> h[n - k]
+                                </span>
+                            </div>
+                            <canvas id="canvasOverlay"></canvas>
+                        </div>
+
+                        <div class="plot-container">
+                            <div class="plot-header">
+                                <span class="plot-title">
+                                    <span class="dot-legend" style="background: var(--color-prod);"></span> Product p[k]
+                                </span>
+                            </div>
+                            <canvas id="canvasProduct"></canvas>
+                        </div>
+
+                        <div class="plot-container">
+                            <div class="plot-header">
+                                <span class="plot-title">
+                                    <span class="dot-legend" style="background: var(--color-y);"></span> Output y[n]
+                                </span>
+                            </div>
+                            <canvas id="canvasOutput"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab 2: Tabela em Escopo Detalhado -->
+                <div id="tab-table" class="tab-panel">
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Shift (n)</th>
+                                    <th>Overlap (k)</th>
+                                    <th>Summation ∑ x[k] · h[n - k]</th>
+                                    <th>y[n]</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tableBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </main>
+
+        </div>
+    </div>
+
+    <script>
+        let appState = {
+            x: [], originX: 0,
+            h: [], originH: 0,
+            y: [], originY: 0,
+            kMin: 0, kMax: 0,
+            nMin: 0, nMax: 0,
+            currentN: 0,
+            steps: [],
+            isPlaying: false,
+            playTimer: null
+        };
+
+        function initTheme() {
+            const savedTheme = localStorage.getItem('dsp_theme') || 'dark';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            updateThemeButtonText(savedTheme);
+        }
+
+        function toggleTheme() {
+            const current = document.documentElement.getAttribute('data-theme');
+            const target = current === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', target);
+            localStorage.setItem('dsp_theme', target);
+            updateThemeButtonText(target);
+            redrawAllPlots();
+        }
+
+        function updateThemeButtonText(theme) {
+            document.getElementById('themeBtn').innerText = theme === 'dark' ? '☀️ Light' : '🌙 Dark';
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.remove('active'));
+
+            if (tabId === 'interactive') {
+                document.querySelectorAll('.tab-btn')[0].classList.add('active');
+                document.getElementById('tab-interactive').classList.add('active');
+                redrawAllPlots();
+            } else {
+                document.querySelectorAll('.tab-btn')[1].classList.add('active');
+                document.getElementById('tab-table').classList.add('active');
+                highlightTableRow(appState.currentN);
+            }
+        }
+
+        function parseSignalInput(str) {
+            if (!str || !str.trim()) return null;
+            const parts = str.split(',').map(s => s.trim()).filter(s => s.length > 0);
+            const nums = parts.map(s => Number(s));
+            if (nums.some(n => isNaN(n))) return null;
+            return nums;
+        }
+
+        function loadPreset(presetKey) {
+            const inputX = document.getElementById('inputX');
+            const originX = document.getElementById('originX');
+            const inputH = document.getElementById('inputH');
+            const originH = document.getElementById('originH');
+
+            switch (presetKey) {
+                case 'rect':
+                    inputX.value = '1, 1, 1, 1, 1'; originX.value = '0';
+                    inputH.value = '1, 1, 1'; originH.value = '0';
+                    break;
+                case 'impulse':
+                    inputX.value = '1, 2, 3, 4, 5'; originX.value = '0';
+                    inputH.value = '0, 0, 1, 0, 0'; originH.value = '-2';
+                    break;
+                case 'decay':
+                    inputX.value = '1, 0.8, 0.64, 0.51, 0.41, 0.33'; originX.value = '0';
+                    inputH.value = '1, 0.5, 0.25'; originH.value = '0';
+                    break;
+                case 'moving_avg':
+                    inputX.value = '0, 1, 4, 2, 8, 5, 1, 0'; originX.value = '0';
+                    inputH.value = '0.33, 0.33, 0.33'; originH.value = '-1';
+                    break;
+                case 'diff':
+                    inputX.value = '1, 3, 6, 10, 9, 7, 3'; originX.value = '0';
+                    inputH.value = '1, -1'; originH.value = '0';
+                    break;
+            }
+            computeConvolution();
+        }
+
+        function computeConvolution() {
+            stopPlayback();
+
+            const rawX = document.getElementById('inputX').value;
+            const rawH = document.getElementById('inputH').value;
+            const origX = parseInt(document.getElementById('originX').value) || 0;
+            const origH = parseInt(document.getElementById('originH').value) || 0;
+
+            const x = parseSignalInput(rawX);
+            const h = parseSignalInput(rawH);
+
+            const errBanner = document.getElementById('errorBanner');
+            if (!x || !h || x.length === 0 || h.length === 0) {
+                errBanner.style.display = 'block';
+                return;
+            }
+            errBanner.style.display = 'none';
+
+            const xMinN = origX;
+            const xMaxN = origX + x.length - 1;
+            const hMinN = origH;
+            const hMaxN = origH + h.length - 1;
+
+            const nMin = xMinN + hMinN;
+            const nMax = xMaxN + hMaxN;
+            const lenY = x.length + h.length - 1;
+
+            const y = new Array(lenY).fill(0);
+            const steps = [];
+
+            for (let n = nMin; n <= nMax; n++) {
+                let sum = 0;
+                let stepDetails = { n, terms: [], prods: {}, kValues: [] };
+
+                for (let k = xMinN; k <= xMaxN; k++) {
+                    const xVal = x[k - xMinN];
+                    const hIndex = n - k - hMinN;
+
+                    if (hIndex >= 0 && hIndex < h.length) {
+                        const hVal = h[hIndex];
+                        const prod = xVal * hVal;
+                        sum += prod;
+                        stepDetails.terms.push({ k, xVal, hVal, prod });
+                        stepDetails.prods[k] = prod;
+                        stepDetails.kValues.push(k);
+                    }
+                }
+
+                y[n - nMin] = Math.round(sum * 100000) / 100000;
+                stepDetails.sum = y[n - nMin];
+                steps.push(stepDetails);
+            }
+
+            const kMin = Math.min(xMinN, nMin - hMaxN, nMin) - 2;
+            const kMax = Math.max(xMaxN, nMax - hMinN, nMax) + 2;
+
+            appState = {
+                x, originX: origX, xMinN, xMaxN,
+                h, originH: origH, hMinN, hMaxN,
+                y, originY: nMin, nMin, nMax,
+                kMin, kMax,
+                currentN: nMin,
+                steps,
+                isPlaying: false,
+                playTimer: null
+            };
+
+            const yValuesStr = y.join(', ');
+            const indicesStr = y.map((v, i) => `y[${nMin + i}] = ${v}`).join('; ');
+
+            document.getElementById('resultFormula').innerHTML = `
+                <div><strong>y[n] = [ ${yValuesStr} ]</strong></div>
+                <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 4px;">
+                    Origin index (n = 0): y[0] at pos ${-nMin < 0 || -nMin >= y.length ? 'out' : -nMin}
+                    <br>${indicesStr}
+                </div>
+            `;
+
+            const slider = document.getElementById('stepSlider');
+            slider.min = nMin;
+            slider.max = nMax;
+            slider.value = nMin;
+            updateSliderLabel(nMin);
+
+            renderCalculationTable();
+            redrawAllPlots();
+        }
+
+        function updateSliderLabel(val) {
+            document.getElementById('stepValLabel').innerText = `n = ${val}`;
+        }
+
+        function onSliderChange(val) {
+            appState.currentN = parseInt(val);
+            updateSliderLabel(appState.currentN);
+            redrawAllPlots();
+            highlightTableRow(appState.currentN);
+        }
+
+        function stepNext() {
+            if (appState.currentN < appState.nMax) {
+                appState.currentN++;
+                document.getElementById('stepSlider').value = appState.currentN;
+                onSliderChange(appState.currentN);
+            } else {
+                stopPlayback();
+            }
+        }
+
+        function stepPrevious() {
+            if (appState.currentN > appState.nMin) {
+                appState.currentN--;
+                document.getElementById('stepSlider').value = appState.currentN;
+                onSliderChange(appState.currentN);
+            }
+        }
+
+        function togglePlay() {
+            if (appState.isPlaying) {
+                stopPlayback();
+            } else {
+                startPlayback();
+            }
+        }
+
+        function startPlayback() {
+            appState.isPlaying = true;
+            document.getElementById('playBtn').innerText = '⏸ Pause';
+            if (appState.currentN >= appState.nMax) {
+                appState.currentN = appState.nMin;
+            }
+            appState.playTimer = setInterval(() => {
+                if (appState.currentN < appState.nMax) {
+                    stepNext();
+                } else {
+                    stopPlayback();
+                }
+            }, 800);
+        }
+
+        function stopPlayback() {
+            appState.isPlaying = false;
+            document.getElementById('playBtn').innerText = '▶ Play';
+            if (appState.playTimer) {
+                clearInterval(appState.playTimer);
+                appState.playTimer = null;
+            }
+        }
+
+        function renderCalculationTable() {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+
+            appState.steps.forEach(step => {
+                const tr = document.createElement('tr');
+                tr.setAttribute('id', `table-row-${step.n}`);
+
+                let termStr = step.terms.map(t => `(${t.xVal}·${t.hVal})`).join(' + ');
+                if (!termStr) termStr = '0 (No overlap)';
+
+                let kRangeStr = step.terms.length > 0 ? 
+                    `[${Math.min(...step.kValues)}, ${Math.max(...step.kValues)}]` : '-';
+
+                tr.innerHTML = `
+                    <td class="math-code"><strong>n = ${step.n}</strong></td>
+                    <td>${kRangeStr}</td>
+                    <td class="math-code">${termStr}</td>
+                    <td class="math-code sum-highlight">${step.sum}</td>
+                `;
+
+                tr.addEventListener('click', () => {
+                    appState.currentN = step.n;
+                    document.getElementById('stepSlider').value = step.n;
+                    onSliderChange(step.n);
+                });
+
+                tbody.appendChild(tr);
+            });
+            highlightTableRow(appState.currentN);
+        }
+
+        function highlightTableRow(n) {
+            document.querySelectorAll('#tableBody tr').forEach(r => r.classList.remove('active-step-row'));
+            const targetRow = document.getElementById(`table-row-${n}`);
+            if (targetRow) {
+                targetRow.classList.add('active-step-row');
+            }
+        }
+
+        function redrawAllPlots() {
+            drawOverlayPlot();
+            drawProductPlot();
+            drawOutputPlot();
+        }
+
+        function getCanvasContext(canvasId) {
+            const canvas = document.getElementById(canvasId);
+            const ctx = canvas.getContext('2d');
+            const dpr = window.devicePixelRatio || 1;
+            const rect = canvas.getBoundingClientRect();
+
+            if (canvas.width !== rect.width * dpr || canvas.height !== rect.height * dpr) {
+                canvas.width = rect.width * dpr;
+                canvas.height = rect.height * dpr;
+            }
+            ctx.resetTransform();
+            ctx.scale(dpr, dpr);
+            return { canvas, ctx, width: rect.width, height: rect.height };
+        }
+
+        function drawOverlayPlot() {
+            const { ctx, width, height } = getCanvasContext('canvasOverlay');
+            ctx.clearRect(0, 0, width, height);
+
+            const n = appState.currentN;
+            const kMin = appState.kMin;
+            const kMax = appState.kMax;
+
+            const allVals = [...appState.x, ...appState.h, ...appState.y, 1];
+            const maxAmp = Math.max(...allVals.map(Math.abs), 1) * 1.25;
+
+            const padding = 25;
+            const plotW = width - 2 * padding;
+            const plotH = height - 2 * padding;
+            const zeroY = height / 2;
+
+            function getX(k) { return padding + ((k - kMin) / (kMax - kMin)) * plotW; }
+            function getY(val) { return zeroY - (val / maxAmp) * (plotH / 2); }
+
+            const style = getComputedStyle(document.body);
+            const colorX = style.getPropertyValue('--color-x').trim();
+            const colorH = style.getPropertyValue('--color-h').trim();
+            const gridColor = style.getPropertyValue('--border').trim();
+            const textColor = style.getPropertyValue('--text-secondary').trim();
+
+            ctx.strokeStyle = gridColor;
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(padding, zeroY);
+            ctx.lineTo(width - padding, zeroY);
+            ctx.stroke();
+
+            ctx.fillStyle = textColor;
+            ctx.font = '9px sans-serif';
+            ctx.textAlign = 'center';
+
+            for (let k = kMin; k <= kMax; k++) {
+                const px = getX(k);
+                ctx.beginPath();
+                ctx.moveTo(px, zeroY - 2);
+                ctx.lineTo(px, zeroY + 2);
+                ctx.stroke();
+                ctx.fillText(k, px, zeroY + 12);
+            }
+
+            for (let k = appState.xMinN; k <= appState.xMaxN; k++) {
+                const val = appState.x[k - appState.originX];
+                const px = getX(k) - 2;
+                const py = getY(val);
+
+                ctx.strokeStyle = colorX;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(px, zeroY);
+                ctx.lineTo(px, py);
+                ctx.stroke();
+
+                ctx.fillStyle = colorX;
+                ctx.beginPath();
+                ctx.arc(px, py, 3, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            for (let j = 0; j < appState.h.length; j++) {
+                const k = n - (j + appState.originH);
+                const val = appState.h[j];
+                const px = getX(k) + 2;
+                const py = getY(val);
+
+                ctx.strokeStyle = colorH;
+                ctx.lineWidth = 2;
+                ctx.setLineDash([3, 2]);
+                ctx.beginPath();
+                ctx.moveTo(px, zeroY);
+                ctx.lineTo(px, py);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                ctx.fillStyle = colorH;
+                ctx.beginPath();
+                ctx.arc(px, py, 3, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        function drawProductPlot() {
+            const { ctx, width, height } = getCanvasContext('canvasProduct');
+            ctx.clearRect(0, 0, width, height);
+
+            const step = appState.steps.find(s => s.n === appState.currentN);
+            const kMin = appState.kMin;
+            const kMax = appState.kMax;
+
+            const allVals = [...appState.x, ...appState.h, ...appState.y, 1];
+            const maxAmp = Math.max(...allVals.map(Math.abs), 1) * 1.25;
+
+            const padding = 25;
+            const plotW = width - 2 * padding;
+            const plotH = height - 2 * padding;
+            const zeroY = height / 2;
+
+            function getX(k) { return padding + ((k - kMin) / (kMax - kMin)) * plotW; }
+            function getY(val) { return zeroY - (val / maxAmp) * (plotH / 2); }
+
+            const style = getComputedStyle(document.body);
+            const colorProd = style.getPropertyValue('--color-prod').trim();
+            const gridColor = style.getPropertyValue('--border').trim();
+            const textColor = style.getPropertyValue('--text-secondary').trim();
+
+            ctx.strokeStyle = gridColor;
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(padding, zeroY);
+            ctx.lineTo(width - padding, zeroY);
+            ctx.stroke();
+
+            ctx.fillStyle = textColor;
+            ctx.font = '9px sans-serif';
+            ctx.textAlign = 'center';
+
+            for (let k = kMin; k <= kMax; k++) {
+                const px = getX(k);
+                ctx.beginPath();
+                ctx.moveTo(px, zeroY - 2);
+                ctx.lineTo(px, zeroY + 2);
+                ctx.stroke();
+                ctx.fillText(k, px, zeroY + 12);
+            }
+
+            if (step && step.terms) {
+                step.terms.forEach(t => {
+                    const px = getX(t.k);
+                    const py = getY(t.prod);
+
+                    ctx.strokeStyle = colorProd;
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(px, zeroY);
+                    ctx.lineTo(px, py);
+                    ctx.stroke();
+
+                    ctx.fillStyle = colorProd;
+                    ctx.beginPath();
+                    ctx.arc(px, py, 3.5, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+            }
+        }
+
+        function drawOutputPlot() {
+            const { ctx, width, height } = getCanvasContext('canvasOutput');
+            ctx.clearRect(0, 0, width, height);
+
+            const currentN = appState.currentN;
+            const kMin = appState.kMin;
+            const kMax = appState.kMax;
+
+            const maxAmp = Math.max(...appState.y.map(Math.abs), 1) * 1.25;
+
+            const padding = 25;
+            const plotW = width - 2 * padding;
+            const plotH = height - 2 * padding;
+            const zeroY = height / 2;
+
+            function getX(n) { return padding + ((n - kMin) / (kMax - kMin)) * plotW; }
+            function getY(val) { return zeroY - (val / maxAmp) * (plotH / 2); }
+
+            const style = getComputedStyle(document.body);
+            const colorY = style.getPropertyValue('--color-y').trim();
+            const gridColor = style.getPropertyValue('--border').trim();
+            const textColor = style.getPropertyValue('--text-secondary').trim();
+
+            ctx.strokeStyle = gridColor;
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(padding, zeroY);
+            ctx.lineTo(width - padding, zeroY);
+            ctx.stroke();
+
+            ctx.fillStyle = textColor;
+            ctx.font = '9px sans-serif';
+            ctx.textAlign = 'center';
+
+            for (let n = kMin; n <= kMax; n++) {
+                const px = getX(n);
+                ctx.beginPath();
+                ctx.moveTo(px, zeroY - 2);
+                ctx.lineTo(px, zeroY + 2);
+                ctx.stroke();
+                ctx.fillText(n, px, zeroY + 12);
+            }
+
+            for (let i = 0; i < appState.y.length; i++) {
+                const n = appState.originY + i;
+                if (n > currentN) continue;
+
+                const val = appState.y[i];
+                const px = getX(n);
+                const py = getY(val);
+
+                const isCurrent = (n === currentN);
+
+                ctx.strokeStyle = isCurrent ? '#f43f5e' : colorY;
+                ctx.lineWidth = isCurrent ? 2.5 : 1.5;
+                ctx.beginPath();
+                ctx.moveTo(px, zeroY);
+                ctx.lineTo(px, py);
+                ctx.stroke();
+
+                ctx.fillStyle = isCurrent ? '#f43f5e' : colorY;
+                ctx.beginPath();
+                ctx.arc(px, py, isCurrent ? 5 : 3, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        window.addEventListener('load', () => {
+            initTheme();
+            computeConvolution();
+        });
+
+        window.addEventListener('resize', () => {
+            if (appState.y.length > 0) redrawAllPlots();
+        });
+    </script>
+</body>
+</html>
