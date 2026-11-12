@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora & Visualizador de Convolução Discreta</title>
+    <style>
+        :root {
+            --bg-primary: #f8fafc;
+            --bg-card: #ffffff;
+            --bg-input: #f1f5f9;
+            --border-color: #e2e8f0;
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --accent-x: #2563eb;
+            --accent-h: #d97706;
+            --accent-y: #059669;
+            --accent-glow: rgba(37, 99, 235, 0.15);
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+            --radius: 12px;
+        }
+
+        [data-theme="dark"] {
+            --bg-primary: #0f172a;
+            --bg-card: #1e293b;
+            --bg-input: #334155;
+            --border-color: #334155;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --accent-x: #60a5fa;
+            --accent-h: #fbbf24;
+            --accent-y: #34d399;
+            --accent-glow: rgba(96, 165, 250, 0.2);
+            --shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', system-ui, -apple-system, Roboto, sans-serif;
+            transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            max-width: 1100px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .theme-toggle {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 8px 16px;
+            border-radius: var(--radius);
+            cursor: pointer;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: var(--shadow);
+        }
+
+        .card {
+            background: var(--bg-card);
+            border-radius: var(--radius);
+            padding: 20px;
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow);
+        }
+
+        .inputs-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .input-group label {
+            font-weight: 600;
+            font-size: 0.95rem;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .badge {
+            font-size: 0.8rem;
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-weight: normal;
+        }
+
+        .badge-x { background: rgba(37, 99, 235, 0.15); color: var(--accent-x); }
+        .badge-h { background: rgba(217, 119, 6, 0.15); color: var(--accent-h); }
+
+        input[type="text"], input[type="number"] {
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 1rem;
+            outline: none;
+        }
+
+        input[type="text"]:focus, input[type="number"]:focus {
+            border-color: var(--accent-x);
+        }
+
+        .sub-inputs {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .sub-inputs input[type="number"] {
+            width: 100px;
+        }
+
+        .btn-calc {
+            background: var(--accent-x);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 1rem;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 15px;
+            width: 100%;
+            box-shadow: 0 4px 10px var(--accent-glow);
+        }
+
+        .btn-calc:hover {
+            filter: brightness(1.1);
+        }
+
+        .results-summary {
+            background: var(--bg-input);
+            border-radius: 8px;
+            padding: 15px;
+            font-family: monospace;
+            font-size: 1.1rem;
+            overflow-x: auto;
+            border-left: 4px solid var(--accent-y);
+            margin-bottom: 20px;
+        }
+
+        .charts-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .chart-box {
+            position: relative;
+            width: 100%;
+            height: 200px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+        }
+
+        .chart-title {
+            position: absolute;
+            top: 10px;
+            left: 15px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            z-index: 10;
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            margin-top: 10px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+
+        th, td {
+            padding: 10px;
+            border: 1px solid var(--border-color);
+        }
+
+        th {
+            background: var(--bg-input);
+            font-weight: 600;
+        }
+
+        .highlight-row {
+            background: rgba(5, 150, 105, 0.1);
+            font-weight: bold;
+        }
+
+        .tab-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .tab-btn {
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .tab-btn.active {
+            background: var(--accent-x);
+            color: white;
+            border-color: var(--accent-x);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .error-msg {
+            color: #ef4444;
+            font-size: 0.85rem;
+            margin-top: 4px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>⚡ Convolução Discreta DSP</h1>
+            <button class="theme-toggle" onclick="toggleTheme()" id="themeBtn">🌙 Modo Escuro</button>
+        </header>
+
+        <!-- Painel de Entrada de Dados -->
+        <section class="card">
+            <div class="inputs-grid">
+                <div class="input-group">
+                    <label>
+                        Sinal de Entrada x[n] 
+                        <span class="badge badge-x">Entrada</span>
+                    </label>
+                    <input type="text" id="signalX" value="1, 2, 3, 1" placeholder="Ex: 1, 2, 3, 1">
+                    <div class="sub-inputs">
+                        <label style="font-size:0.85rem; font-weight:normal;">Índice do 1º elemento (n=0 se 0):</label>
+                        <input type="number" id="originX" value="0" step="1">
+                    </div>
+                    <div id="errX" class="error-msg">Formato inválido! Use números separados por vírgula.</div>
+                </div>
+
+                <div class="input-group">
+                    <label>
+                        Resposta ao Impulso h[n] 
+                        <span class="badge badge-h">Sistema</span>
+                    </label>
+                    <input type="text" id="signalH" value="1, -1, 2" placeholder="Ex: 1, -1, 2">
+                    <div class="sub-inputs">
+                        <label style="font-size:0.85rem; font-weight:normal;">Índice do 1º elemento (n=0 se 0):</label>
+                        <input type="number" id="originH" value="0" step="1">
+                    </div>
+                    <div id="errH" class="error-msg">Formato inválido! Use números separados por vírgula.</div>
+                </div>
+            </div>
+
+            <button class="btn-calc" onclick="calculateAndRender()">Calcular Convolução y[n] = x[n] * h[n]</button>
+        </section>
+
+        <!-- Resultados e Visualização -->
+        <section class="card">
+            <h2 style="font-size: 1.2rem; margin-bottom: 15px;">Resultado</h2>
+            <div class="results-summary" id="resultText">
+                y[n] = { ... }
+            </div>
+
+            <div class="tab-buttons">
+                <button class="tab-btn active" onclick="switchTab('graphics')">Gráficos (Stem Plots)</button>
+                <button class="tab-btn" onclick="switchTab('steps')">Passo a Passo (Tabela)</button>
+            </div>
+
+            <!-- Aba Gráficos -->
+            <div id="tab-graphics" class="tab-content active">
+                <div class="charts-container">
+                    <div class="chart-box">
+                        <span class="chart-title" style="color: var(--accent-x);">x[n] - Entrada</span>
+                        <canvas id="canvasX"></canvas>
+                    </div>
+                    <div class="chart-box">
+                        <span class="chart-title" style="color: var(--accent-h);">h[n] - Resposta ao Impulso</span>
+                        <canvas id="canvasH"></canvas>
+                    </div>
+                    <div class="chart-box">
+                        <span class="chart-title" style="color: var(--accent-y);">y[n] = x[n] * h[n] - Saída Convoluída</span>
+                        <canvas id="canvasY"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Aba Passo a Passo -->
+            <div id="tab-steps" class="tab-content">
+                <p style="color: var(--text-secondary); font-size:0.9rem; margin-bottom:10px;">
+                    Cálculo detalhado utilizando a somatória: <i>y[n] = ∑ x[k] · h[n - k]</i>
+                </p>
+                <div class="table-container">
+                    <table id="stepsTable">
+                        <thead>
+                            <tr id="tableHeader">
+                                <th>n</th>
+                                <th>Cálculo Detalhado (Somatória)</th>
+                                <th>y[n]</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody">
+                            <!-- Preenchido via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        let state = {
+            x: [], originX: 0,
+            h: [], originH: 0,
+            y: [], originY: 0,
+            rangeY: { min: 0, max: 0 }
+        };
+
+        window.addEventListener('resize', () => {
+            if (state.x.length) renderCharts();
+        });
+
+        function toggleTheme() {
+            const body = document.body;
+            const currentTheme = body.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            body.setAttribute('data-theme', newTheme);
+            document.getElementById('themeBtn').innerText = newTheme === 'dark' ? '☀️ Modo Claro' : '🌙 Modo Escuro';
+            if (state.x.length) renderCharts();
+        }
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+            if (tabName === 'graphics') {
+                document.querySelectorAll('.tab-btn')[0].classList.add('active');
+                document.getElementById('tab-graphics').classList.add('active');
+                renderCharts();
+            } else {
+                document.querySelectorAll('.tab-btn')[1].classList.add('active');
+                document.getElementById('tab-steps').classList.add('active');
+            }
+        }
+
+        function parseInput(str) {
+            if (!str.trim()) return null;
+            const arr = str.split(',').map(v => parseFloat(v.trim()));
+            if (arr.some(isNaN)) return null;
+            return arr;
+        }
+
+        function calculateAndRender() {
+            const strX = document.getElementById('signalX').value;
+            const strH = document.getElementById('signalH').value;
+            const originX = parseInt(document.getElementById('originX').value) || 0;
+            const originH = parseInt(document.getElementById('originH').value) || 0;
+
+            const x = parseInput(strX);
+            const h = parseInput(strH);
+
+            let valid = true;
+            document.getElementById('errX').style.display = x ? 'none' : 'block';
+            document.getElementById('errH').style.display = h ? 'none' : 'block';
+            if (!x || !h) return;
+
+            const nX_min = originX;
+            const nX_max = originX + x.length - 1;
+            const nH_min = originH;
+            const nH_max = originH + h.length - 1;
+
+            const nY_min = nX_min + nH_min;
+            const nY_max = nX_max + nH_max;
+            const lenY = x.length + h.length - 1;
+
+            const y = new Array(lenY).fill(0);
+            const steps = [];
+
+            for (let i = 0; i < x.length; i++) {
+                for (let j = 0; j < h.length; j++) {
+                    y[i + j] += x[i] * h[j];
+                }
+            }
+
+            // Guardar Estado
+            state = {
+                x, originX,
+                h, originH,
+                y, originY: nY_min,
+                rangeX: { min: nX_min, max: nX_max },
+                rangeH: { min: nH_min, max: nH_max },
+                rangeY: { min: nY_min, max: nY_max }
+            };
+
+            // Atualizar Texto de Resultado
+            let resFormatted = y.map((val, idx) => `y[${nY_min + idx}] = ${val}`).join(', ');
+            document.getElementById('resultText').innerHTML = `<strong>y[n] = [ ${y.join(', ')} ]</strong><br><span style="font-size:0.9rem; color:var(--text-secondary)">Índices de tempo: ${resFormatted}</span>`;
+
+            renderCharts();
+            renderTable();
+        }
+
+        function drawStemPlot(canvasId, signal, startN, color) {
+            const canvas = document.getElementById(canvasId);
+            const ctx = canvas.getContext('2d');
+            const dpr = window.devicePixelRatio || 1;
+
+            // Ajustar resolução para telas HDPI/Retina
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            ctx.scale(dpr, dpr);
+
+            const width = rect.width;
+            const height = rect.height;
+
+            ctx.clearRect(0, 0, width, height);
+
+            if (!signal || signal.length === 0) return;
+
+            // Calcular limites de N e valores Y para escala global proporcional
+            const endN = startN + signal.length - 1;
+            const minN = Math.min(state.rangeX.min, state.rangeH.min, state.rangeY.min, -1);
+            const maxN = Math.max(state.rangeX.max, state.rangeH.max, state.rangeY.max, 1);
+
+            const allVals = [...state.x, ...state.h, ...state.y, 0];
+            const maxVal = Math.max(...allVals.map(Math.abs), 1);
+
+            const padding = 35;
+            const plotWidth = width - 2 * padding;
+            const plotHeight = height - 2 * padding;
+
+            const zeroY = height / 2;
+
+            // Desenhar Eixo N (Horizontal)
+            ctx.strokeStyle = getComputedStyle(document.body).getPropertyValue('--border-color');
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(padding, zeroY);
+            ctx.lineTo(width - padding, zeroY);
+            ctx.stroke();
+
+            // Função de Mapeamento X
+            function getXPixel(n) {
+                return padding + ((n - minN) / (maxN - minN || 1)) * plotWidth;
+            }
+
+            // Função de Mapeamento Y
+            function getYPixel(val) {
+                return zeroY - (val / (maxVal * 1.2)) * (plotHeight / 2);
+            }
+
+            // Marcar eixos de tempo (Ticks)
+            ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--text-secondary');
+            ctx.font = '10px sans-serif';
+            ctx.textAlign = 'center';
+
+            for (let n = minN; n <= maxN; n++) {
+                const px = getXPixel(n);
+                ctx.beginPath();
+                ctx.moveTo(px, zeroY - 3);
+                ctx.lineTo(px, zeroY + 3);
+                ctx.stroke();
+                ctx.fillText(n, px, zeroY + 15);
+            }
+
+            // Desenhar Hastes (Stems)
+            for (let i = 0; i < signal.length; i++) {
+                const n = startN + i;
+                const val = signal[i];
+                const px = getXPixel(n);
+                const py = getYPixel(val);
+
+                // Linha da haste
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(px, zeroY);
+                ctx.lineTo(px, py);
+                ctx.stroke();
+
+                // Ponto na ponta (bolinha)
+                ctx.fillStyle = color;
+                ctx.beginPath();
+                ctx.arc(px, py, 4, 0, 2 * Math.PI);
+                ctx.fill();
+
+                // Valor acima/abaixo do ponto
+                ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--text-primary');
+                ctx.font = '11px sans-serif';
+                const textOffset = val >= 0 ? -8 : 15;
+                ctx.fillText(val, px, py + textOffset);
+            }
+        }
+
+        function renderCharts() {
+            const styles = getComputedStyle(document.body);
+            const colorX = styles.getPropertyValue('--accent-x').trim();
+            const colorH = styles.getPropertyValue('--accent-h').trim();
+            const colorY = styles.getPropertyValue('--accent-y').trim();
+
+            drawStemPlot('canvasX', state.x, state.originX, colorX);
+            drawStemPlot('canvasH', state.h, state.originH, colorH);
+            drawStemPlot('canvasY', state.y, state.originY, colorY);
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+
+            const nY_min = state.originY;
+            const nY_max = state.rangeY.max;
+
+            for (let n = nY_min; n <= nY_max; n++) {
+                let terms = [];
+                let sum = 0;
+
+                for (let k = state.rangeX.min; k <= state.rangeX.max; k++) {
+                    const xVal = state.x[k - state.originX];
+                    const hIdx = n - k - state.originH;
+                    
+                    if (hIdx >= 0 && hIdx < state.h.length) {
+                        const hVal = state.h[hIdx];
+                        const prod = xVal * hVal;
+                        sum += prod;
+                        terms.push(`(${xVal} · ${hVal})`);
+                    }
+                }
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><strong>${n}</strong></td>
+                    <td>${terms.length > 0 ? terms.join(' + ') : '0'}</td>
+                    <td style="color: var(--accent-y); font-weight: bold;">${sum}</td>
+                `;
+                tbody.appendChild(tr);
+            }
+        }
+
+        // Inicializar com os dados padrão no carregamento
+        window.onload = function() {
+            calculateAndRender();
+        };
+    </script>
+</body>
+</html>
